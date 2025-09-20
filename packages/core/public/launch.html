@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launching Deriv Third-Party App...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0e0e0e;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+        h1 {
+            color: #ff444f;
+            margin-bottom: 20px;
+        }
+        .spinner {
+            border: 3px solid rgba(255, 68, 79, 0.1);
+            border-top: 3px solid #ff444f;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            color: #999;
+            margin-top: 20px;
+        }
+        .account-info {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #999;
+        }
+        .value {
+            color: #00a79e;
+            font-weight: bold;
+        }
+        .launch-btn {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        .launch-btn:hover {
+            background: #e63946;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Third-Party Deriv App</h1>
+        <div class="spinner"></div>
+        <div class="status">Initializing your trading environment...</div>
+        
+        <div class="account-info" id="accountInfo" style="display: none;">
+            <div class="info-row">
+                <span class="label">Login ID:</span>
+                <span class="value" id="loginId">-</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Currency:</span>
+                <span class="value" id="currency">-</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Account Type:</span>
+                <span class="value" id="accountType">-</span>
+            </div>
+        </div>
+        
+        <button class="launch-btn" id="launchBtn" style="display: none;" onclick="launchApp()">
+            Launch Modified Trading Interface
+        </button>
+    </div>
+
+    <script>
+        function checkAuth() {
+            const activeLoginId = localStorage.getItem('active_loginid');
+            const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+            
+            if (activeLoginId && accounts[activeLoginId]) {
+                const account = accounts[activeLoginId];
+                
+                // Show account info
+                document.getElementById('loginId').textContent = activeLoginId;
+                document.getElementById('currency').textContent = account.currency || 'USD';
+                document.getElementById('accountType').textContent = 
+                    account.is_virtual ? 'Demo Account' : 'Real Account';
+                
+                document.getElementById('accountInfo').style.display = 'block';
+                document.querySelector('.spinner').style.display = 'none';
+                document.querySelector('.status').textContent = 
+                    'Ready to launch your modified trading interface!';
+                
+                document.getElementById('launchBtn').style.display = 'block';
+                
+                // Auto-launch after 2 seconds
+                setTimeout(() => {
+                    launchApp();
+                }, 2000);
+            } else {
+                document.querySelector('.spinner').style.display = 'none';
+                document.querySelector('.status').innerHTML = `
+                    No OAuth tokens found. Please login first.<br><br>
+                    <a href="/login-test.html" style="color: #ff444f;">Go to Login</a>
+                `;
+            }
+        }
+        
+        function launchApp() {
+            document.querySelector('.status').textContent = 
+                'Launching your modified UI with extended features...';
+            
+            // Go to the main app - it will now recognize the OAuth tokens
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 500);
+        }
+        
+        // Check auth on load
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>

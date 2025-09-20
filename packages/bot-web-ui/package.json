@@ -18,11 +18,11 @@
         "node": "20.x"
     },
     "scripts": {
-        "analyze:stats": "f () { npm run build:skeleton && NODE_OPTIONS='-r ts-node/register' webpack --progress --env base=$1 --profile --json=stats.json;}; f",
+        "analyze:stats": "npm run build:skeleton && webpack --progress --profile --json=stats.json",
         "analyze:build": "webpack-bundle-analyzer --no-open -m static -r treemap.html stats.json ./dist && webpack-bundle-analyzer -m json stats.json ./dist",
         "start": "npm run test && npm run serve",
-        "serve": "echo \"Serving...\" && NODE_OPTIONS='-r ts-node/register' webpack --progress --watch",
-        "build": "f () { npm run build:skeleton && NODE_OPTIONS='-r ts-node/register' webpack --progress --env base=$1;}; f",
+        "serve": "echo \"Serving...\" && npm run build:skeleton && webpack --progress --watch",
+        "build": "npm run build:skeleton && webpack --progress",
         "build:skeleton": "npm exec --workspace=@deriv/bot-skeleton -- npm run build",
         "build:travis": "echo \"No build:travis specified\"",
         "test:eslint": "eslint \"./src/**/*.?(js|jsx|ts|tsx|spec.ts|spec.js|spec.tsx|spec.tsx)\"",

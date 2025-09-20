@@ -13,6 +13,7 @@ Visual automation for binary.com [bot.binary.com](https://bot.binary.com)
 -   [Release](#release)
 -   [To update to latest version](#to-update-to-latest-version)
 -   [Running the CLI command](#running-the-cli-command)
+-   [Environment variables](#environment-variables)
 
 ## Other documents
 
@@ -53,6 +54,12 @@ npm run release-production # to release it to production
 git pull --rebase upstream dev
 npm install
 ```
+
+## Environment variables
+
+See .env.example in this package for optional vars:
+- GD_CLIENT_ID, GD_API_KEY, GD_APP_ID for Google Drive integration
+- REMOTE_CONFIG_URL optional remote config endpoint
 
 ## Running the CLI command
 

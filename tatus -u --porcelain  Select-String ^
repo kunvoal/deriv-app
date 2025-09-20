@@ -1,0 +1,40 @@
+warning: in the working copy of 'packages/publisher/index.js', LF will be replaced by CRLF the next time Git touches it
+.gitignore
+packages/account/package.json
+packages/appstore/package.json
+packages/bot-skeleton/README.md
+packages/bot-skeleton/docs/README.md
+packages/bot-skeleton/src/scratch/blocks/Binary/Before Purchase/purchase.js
+packages/bot-skeleton/src/scratch/blocks/Binary/Tick Analysis/index.js
+packages/bot-skeleton/src/scratch/hooks/colours.js
+packages/bot-skeleton/src/scratch/xml/main.xml
+packages/bot-skeleton/src/services/tradeEngine/Interface/BotInterface.js
+packages/bot-skeleton/src/services/tradeEngine/Interface/TicksInterface.js
+packages/bot-skeleton/src/services/tradeEngine/trade/Purchase.js
+packages/bot-skeleton/src/services/tradeEngine/trade/Ticks.js
+packages/bot-web-ui/README.md
+packages/bot-web-ui/package.json
+packages/bot-web-ui/src/app/app.scss
+packages/bot-web-ui/src/components/flyout/flyout.scss
+packages/bot-web-ui/src/constants/quick-strategies/index.ts
+packages/bot-web-ui/src/pages/bot-builder/quick-strategy/config.ts
+packages/bot-web-ui/src/pages/bot-builder/quick-strategy/form-wrappers/useQsSubmitHandler.tsx
+packages/bot-web-ui/src/pages/bot-builder/toolbar/toolbar.scss
+packages/bot-web-ui/src/pages/bot-builder/workspace.scss
+packages/bot-web-ui/src/pages/main/main.scss
+packages/bot-web-ui/src/utils/help-content/help-content.config.ts
+packages/bot-web-ui/src/utils/help-content/help-strings/index.ts
+packages/cashier/package.json
+packages/cfd/package.json
+packages/components/webpack.config.js
+packages/core/build/config.js
+packages/core/build/webpack.config.js
+packages/core/package.json
+packages/core/src/App/AppContent.tsx
+packages/core/src/index.tsx
+packages/reports/package.json
+packages/shared/src/utils/config/config.ts
+packages/shared/src/utils/login/login.ts
+packages/shared/src/utils/url/helpers.ts
+packages/trader/package.json
+packages/wallets/package.json

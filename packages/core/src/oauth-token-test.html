@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Token Test - Deriv</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #ff444f;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #e63946;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .status-box {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #e0e0e0;
+            background: #f9f9f9;
+        }
+        .status-box.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .status-box.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .status-box.info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .token-display {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            word-break: break-all;
+            border: 1px solid #ddd;
+        }
+        .account-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+        }
+        .account-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .account-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 5px 15px;
+            font-size: 14px;
+        }
+        .label {
+            font-weight: 600;
+            color: #666;
+        }
+        .instructions {
+            background: #fefefe;
+            border-left: 4px solid #ff444f;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            color: #ff444f;
+            border-bottom: 2px solid #ff444f;
+            margin-bottom: -2px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Deriv OAuth Token Test</h1>
+        <div class="subtitle">Test OAuth flow with mock tokens (no server required)</div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('mock')">Mock Testing</button>
+            <button class="tab" onclick="switchTab('real')">Real OAuth</button>
+            <button class="tab" onclick="switchTab('manual')">Manual Token</button>
+        </div>
+        
+        <!-- Mock Testing Tab -->
+        <div id="mock-tab" class="tab-content active">
+            <div class="instructions">
+                <strong>Mock Testing:</strong> Generate mock tokens for testing without connecting to Deriv servers.
+            </div>
+            
+            <div class="button-group">
+                <button onclick="generateMockTokens()">🎭 Generate Mock Tokens</button>
+                <button onclick="simulateFullOAuth()">🔄 Simulate Full OAuth Flow</button>
+                <button class="secondary" onclick="clearAllTokens()">🗑️ Clear All Tokens</button>
+            </div>
+        </div>
+        
+        <!-- Real OAuth Tab -->
+        <div id="real-tab" class="tab-content">
+            <div class="instructions">
+                <strong>Real OAuth:</strong> To use real OAuth, you need:
+                <ul>
+                    <li>Valid App ID from app.deriv.com</li>
+                    <li>Configured redirect URL</li>
+                    <li>HTTPS connection (or ngrok tunnel)</li>
+                </ul>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="showRealOAuthSetup()">📋 Show Setup Instructions</button>
+                <button onclick="testRealOAuth()" disabled>🚀 Start Real OAuth</button>
+            </div>
+        </div>
+        
+        <!-- Manual Token Tab -->
+        <div id="manual-tab" class="tab-content">
+            <div class="instructions">
+                <strong>Manual Token:</strong> Enter your tokens manually for testing.
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <label for="manual-real-token" style="display: block; margin-bottom: 5px;">Real Account Token:</label>
+                <input type="text" id="manual-real-token" placeholder="Enter real account token" style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                
+                <label for="manual-demo-token" style="display: block; margin-bottom: 5px;">Demo Account Token:</label>
+                <input type="text" id="manual-demo-token" placeholder="Enter demo account token" style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                
+                <button onclick="saveManualTokens()">💾 Save Tokens</button>
+            </div>
+        </div>
+        
+        <!-- Status Display -->
+        <div id="status" class="status-box info">
+            Ready to test OAuth flow...
+        </div>
+        
+        <!-- Accounts Display -->
+        <div id="accounts-display" style="display: none;">
+            <h3>📊 Account Information</h3>
+            <div id="accounts-list"></div>
+        </div>
+        
+        <!-- Token Display -->
+        <div id="token-display" style="display: none;">
+            <h3>🔑 Stored Tokens</h3>
+            <div id="tokens-list"></div>
+        </div>
+        
+        <!-- Response Display -->
+        <div id="response-display" style="display: none;">
+            <h3>📝 OAuth Response</h3>
+            <pre id="response-data"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // Update status message
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status-box ${type}`;
+        }
+        
+        // Generate mock tokens
+        function generateMockTokens() {
+            updateStatus('Generating mock tokens...', 'info');
+            
+            // Generate realistic-looking mock tokens
+            const realToken = 'a1-' + btoa(Math.random().toString(36).substr(2) + Date.now()).replace(/=/g, '');
+            const demoToken = 'a1-' + btoa(Math.random().toString(36).substr(2) + Date.now()).replace(/=/g, '');
+            
+            // Create mock account data
+            const accounts = {
+                real: {
+                    loginid: 'CR' + Math.floor(Math.random() * 1000000),
+                    token: realToken,
+                    currency: 'USD',
+                    account_type: 'real',
+                    landing_company_name: 'svg',
+                    is_virtual: 0,
+                    balance: 10000.00
+                },
+                demo: {
+                    loginid: 'VRTC' + Math.floor(Math.random() * 1000000),
+                    token: demoToken,
+                    currency: 'USD',
+                    account_type: 'demo',
+                    landing_company_name: 'virtual',
+                    is_virtual: 1,
+                    balance: 10000.00
+                }
+            };
+            
+            // Store tokens
+            localStorage.setItem('deriv_real_token', realToken);
+            localStorage.setItem('deriv_demo_token', demoToken);
+            localStorage.setItem('deriv_accounts', JSON.stringify(accounts));
+            localStorage.setItem('active_account', 'real');
+            
+            updateStatus('✅ Mock tokens generated successfully!', 'success');
+            displayAccounts(accounts);
+            displayTokens({ real: realToken, demo: demoToken });
+        }
+        
+        // Simulate full OAuth flow
+        async function simulateFullOAuth() {
+            updateStatus('Starting OAuth simulation...', 'info');
+            
+            // Step 1: Simulate redirect
+            await simulateStep('Redirecting to Deriv OAuth...', 1000);
+            
+            // Step 2: Simulate user login
+            await simulateStep('User logging in...', 1500);
+            
+            // Step 3: Simulate authorization
+            await simulateStep('Authorizing application...', 1000);
+            
+            // Step 4: Generate tokens
+            await simulateStep('Generating access tokens...', 1000);
+            
+            // Step 5: Complete flow
+            generateMockTokens();
+            
+            // Display mock response
+            const mockResponse = {
+                authorize: {
+                    account_list: [
+                        {
+                            account_type: 'real',
+                            currency: 'USD',
+                            is_virtual: 0,
+                            landing_company_name: 'svg',
+                            loginid: 'CR' + Math.floor(Math.random() * 1000000),
+                            token: localStorage.getItem('deriv_real_token')
+                        },
+                        {
+                            account_type: 'demo',
+                            currency: 'USD',
+                            is_virtual: 1,
+                            landing_company_name: 'virtual',
+                            loginid: 'VRTC' + Math.floor(Math.random() * 1000000),
+                            token: localStorage.getItem('deriv_demo_token')
+                        }
+                    ],
+                    email: 'test@example.com',
+                    fullname: 'Test User',
+                    user_id: Math.floor(Math.random() * 1000000),
+                    landing_company_fullname: 'Deriv (SVG) LLC',
+                    country: 'US'
+                },
+                echo_req: {
+                    authorize: 1
+                },
+                msg_type: 'authorize'
+            };
+            
+            displayResponse(mockResponse);
+        }
+        
+        // Simulate a step in the OAuth process
+        function simulateStep(message, delay) {
+            return new Promise(resolve => {
+                updateStatus(message, 'info');
+                setTimeout(resolve, delay);
+            });
+        }
+        
+        // Display accounts
+        function displayAccounts(accounts) {
+            const container = document.getElementById('accounts-list');
+            const displayEl = document.getElementById('accounts-display');
+            
+            container.innerHTML = '';
+            displayEl.style.display = 'block';
+            
+            Object.entries(accounts).forEach(([type, account]) => {
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                card.innerHTML = `
+                    <h4>${type === 'real' ? '💰 Real Account' : '🎮 Demo Account'}</h4>
+                    <div class="account-info">
+                        <span class="label">Login ID:</span>
+                        <span>${account.loginid}</span>
+                        <span class="label">Currency:</span>
+                        <span>${account.currency}</span>
+                        <span class="label">Type:</span>
+                        <span>${account.account_type}</span>
+                        <span class="label">Balance:</span>
+                        <span>$${account.balance.toFixed(2)}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        // Display tokens
+        function displayTokens(tokens) {
+            const container = document.getElementById('tokens-list');
+            const displayEl = document.getElementById('token-display');
+            
+            container.innerHTML = '';
+            displayEl.style.display = 'block';
+            
+            Object.entries(tokens).forEach(([type, token]) => {
+                const tokenEl = document.createElement('div');
+                tokenEl.innerHTML = `
+                    <strong>${type === 'real' ? 'Real Token:' : 'Demo Token:'}</strong>
+                    <div class="token-display">${token}</div>
+                `;
+                container.appendChild(tokenEl);
+            });
+        }
+        
+        // Display OAuth response
+        function displayResponse(response) {
+            const displayEl = document.getElementById('response-display');
+            const dataEl = document.getElementById('response-data');
+            
+            displayEl.style.display = 'block';
+            dataEl.textContent = JSON.stringify(response, null, 2);
+        }
+        
+        // Show real OAuth setup instructions
+        function showRealOAuthSetup() {
+            const instructions = `
+REAL OAUTH SETUP INSTRUCTIONS:
+
+1. Register your application at https://app.deriv.com
+   - Get your App ID
+   - Set redirect URL
+
+2. Configure redirect URL:
+   - Local: http://localhost:8443/oauth-callback.html
+   - Ngrok: https://your-tunnel.ngrok-free.app/oauth-callback.html
+
+3. Update the code with your App ID:
+   - Replace APP_ID in the code
+
+4. For production:
+   - Use HTTPS
+   - Implement proper token validation
+   - Add error handling
+
+Note: Real OAuth requires a valid Deriv account and app registration.
+            `;
+            
+            updateStatus(instructions, 'info');
+        }
+        
+        // Test real OAuth (placeholder)
+        function testRealOAuth() {
+            updateStatus('Real OAuth requires configuration. See setup instructions.', 'error');
+        }
+        
+        // Save manual tokens
+        function saveManualTokens() {
+            const realToken = document.getElementById('manual-real-token').value;
+            const demoToken = document.getElementById('manual-demo-token').value;
+            
+            if (!realToken && !demoToken) {
+                updateStatus('Please enter at least one token', 'error');
+                return;
+            }
+            
+            if (realToken) {
+                localStorage.setItem('deriv_real_token', realToken);
+            }
+            if (demoToken) {
+                localStorage.setItem('deriv_demo_token', demoToken);
+            }
+            
+            updateStatus('✅ Tokens saved successfully!', 'success');
+            
+            // Display saved tokens
+            const tokens = {};
+            if (realToken) tokens.real = realToken;
+            if (demoToken) tokens.demo = demoToken;
+            displayTokens(tokens);
+        }
+        
+        // Clear all tokens
+        function clearAllTokens() {
+            const keysToRemove = [
+                'deriv_real_token',
+                'deriv_demo_token',
+                'deriv_accounts',
+                'active_account',
+                'client.accounts',
+                'client.active_loginid',
+                'client.active_token'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            // Clear displays
+            document.getElementById('accounts-display').style.display = 'none';
+            document.getElementById('token-display').style.display = 'none';
+            document.getElementById('response-display').style.display = 'none';
+            
+            // Clear manual inputs
+            document.getElementById('manual-real-token').value = '';
+            document.getElementById('manual-demo-token').value = '';
+            
+            updateStatus('✅ All tokens cleared successfully!', 'success');
+        }
+        
+        // Check for existing tokens on load
+        window.addEventListener('load', function() {
+            const realToken = localStorage.getItem('deriv_real_token');
+            const demoToken = localStorage.getItem('deriv_demo_token');
+            const accounts = localStorage.getItem('deriv_accounts');
+            
+            if (realToken || demoToken) {
+                updateStatus('✅ Found existing tokens in localStorage', 'success');
+                
+                const tokens = {};
+                if (realToken) tokens.real = realToken;
+                if (demoToken) tokens.demo = demoToken;
+                displayTokens(tokens);
+                
+                if (accounts) {
+                    try {
+                        displayAccounts(JSON.parse(accounts));
+                    } catch (e) {
+                        console.error('Error parsing accounts:', e);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

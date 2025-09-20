@@ -13,6 +13,7 @@ Visual automation for binary.com [bot.binary.com](https://bot.binary.com)
 -   [Release](#release)
 -   [To update to latest version](#to-update-to-latest-version)
 -   [Running the CLI command](#running-the-cli-command)
+-   [New blocks and behaviours](#new-blocks-and-behaviours)
 
 ## Other documents
 
@@ -20,6 +21,26 @@ Visual automation for binary.com [bot.binary.com](https://bot.binary.com)
 -   [Modules docs](docs/Modules/README.md) - Contains implementation guides (i.e., scaffolding, code usage)
 
 Visit [wiki](https://github.com/binary-com/binary-bot/wiki) for more info.
+
+## New blocks and behaviours
+
+- Digit Frequency reporter block
+  - Type: single reporter block returning an Array of ranked digits by last-digit frequency from recent ticks
+  - Params:
+    - entry_count: last N ticks (default 30 if omitted)
+    - top_n: 5/6/7 (default 7)
+    - order: ASC (least frequent first) | DESC (most frequent first; default)
+  - Usage: place under Tick Analysis to recompute every tick or in Before Purchase to feed logic. Codegen calls Bot.getDigitFrequencyList({ entry_count, top_n, order }).
+
+- Purchase block Bulk mode
+  - Toggle Bulk ON to execute sequential purchases for a provided Digit List (Array)
+  - Per-contract stake = existing Stake × number_of_digits (length of Digit List)
+  - Prediction is set per contract to the current digit in the list
+  - Bulk OFF keeps existing single-purchase behaviour
+
+See examples in examples/xml-examples/random/:
+- digit_frequency_bulk.xml: computes top_digits and purchases in bulk using the list
+- digit_frequency_single.xml: computes top_digits without bulk
 
 ## Development
 

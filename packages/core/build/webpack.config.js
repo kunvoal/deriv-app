@@ -21,12 +21,31 @@ module.exports = function (env) {
             },
             host: 'localhost',
             server: 'https',
-
             port: 8443,
-            historyApiFallback: true,
+            allowedHosts: 'all',  // Allow any host including ngrok
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
+            },
+            historyApiFallback: {
+                rewrites: [
+                    { from: /^\/redirect/, to: '/redirect.html' },
+                    { from: /^\/callback/, to: '/oauth-callback.html' },
+                    { from: /./, to: '/index.html' }
+                ],
+            },
             hot: false,
             client: {
                 overlay: false,
+                webSocketURL: 'auto://0.0.0.0:0/ws',
+            },
+            setupMiddlewares: (middlewares, devServer) => {
+                // Handle OAuth callback
+                devServer.app.get('/callback', (req, res) => {
+                    res.sendFile(path.join(__dirname, '../src/oauth-callback.html'));
+                });
+                return middlewares;
             },
         },
         devtool: IS_RELEASE ? 'source-map' : 'eval-cheap-module-source-map',

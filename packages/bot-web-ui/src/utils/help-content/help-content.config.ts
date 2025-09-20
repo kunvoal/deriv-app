@@ -61,6 +61,13 @@ export const help_content_config = public_path => {
         text_prompt_ext: [{ type: TEXT }, { type: BLOCK }, { type: TEXT }],
         //= ================= Tick analysis ==================
         tick_analysis: [{ type: TEXT }, { type: BLOCK }],
+        digit_frequency_bulk: [
+            { type: TEXT },
+            { type: TEXT },
+            { type: TEXT },
+            { type: TEXT },
+            { type: EXAMPLE, example_id: 'digit_frequency_bulk_example' },
+        ],
         read_details: [
             { type: TEXT },
             { type: BLOCK },

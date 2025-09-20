@@ -104,32 +104,48 @@ export const appendSearchParamsToUrl = (url: string): string => {
     return url.startsWith('http') ? url_obj.toString() : `${url_obj.pathname}${url_obj.search}`;
 };
 
-export const getAppstorePlatforms = (): PlatformConfig[] => [
-    {
-        name: getPlatformSettingsAppstore('trader').name,
-        app_desc: localize('The options and multipliers trading platform.'),
-        link_to: appendSearchParamsToUrl(routes.trade),
-    },
-    {
-        name: getPlatformSettingsAppstore('dbot').name,
-        app_desc: localize('The ultimate bot trading platform.'),
-        link_to: appendSearchParamsToUrl(getUrlBot()),
-        is_external: true,
-    },
-    {
-        name: getPlatformSettingsAppstore('smarttrader').name,
-        app_desc: localize('The legacy options trading platform.'),
-        link_to: appendSearchParamsToUrl(getUrlSmartTrader()),
-        is_external: true,
-    },
-    {
-        name: getPlatformSettingsAppstore('go').name,
-        app_desc: localize('The mobile app for trading multipliers and accumulators.'),
-        link_to: getStaticUrl('/deriv-go'),
-        is_external: true,
-        new_tab: true,
-    },
-];
+export const getAppstorePlatforms = (): PlatformConfig[] => {
+    // Check if we're in a third-party context
+    const isThirdPartyApp = () => {
+        if (typeof window === 'undefined') return false;
+        const hasOAuthTokens = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+        const hostname = window.location.hostname;
+        const isOfficialDomain = hostname.includes('.deriv.com') || 
+                                  hostname.includes('.deriv.me') || 
+                                  hostname.includes('.deriv.be') ||
+                                  hostname.includes('.binary.com');
+        return hasOAuthTokens || !isOfficialDomain;
+    };
+    
+    const is_third_party = isThirdPartyApp();
+    
+    return [
+        {
+            name: getPlatformSettingsAppstore('trader').name,
+            app_desc: localize('The options and multipliers trading platform.'),
+            link_to: appendSearchParamsToUrl(routes.trade),
+        },
+        {
+            name: getPlatformSettingsAppstore('dbot').name,
+            app_desc: localize('The ultimate bot trading platform.'),
+            link_to: appendSearchParamsToUrl(getUrlBot()),
+            is_external: !is_third_party, // Only external for official Deriv app
+        },
+        {
+            name: getPlatformSettingsAppstore('smarttrader').name,
+            app_desc: localize('The legacy options trading platform.'),
+            link_to: appendSearchParamsToUrl(getUrlSmartTrader()),
+            is_external: !is_third_party, // Only external for official Deriv app
+        },
+        {
+            name: getPlatformSettingsAppstore('go').name,
+            app_desc: localize('The mobile app for trading multipliers and accumulators.'),
+            link_to: getStaticUrl('/deriv-go'),
+            is_external: true,
+            new_tab: true,
+        },
+    ];
+};
 
 export const getMFAppstorePlatforms = (): MfPlatformConfig[] => [
     {

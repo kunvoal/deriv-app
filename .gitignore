@@ -31,3 +31,8 @@ packages/*/stats.json
 packages/*/report.json
 packages/*/analyzed.html
 packages/*/treemap.html
+
+# Allow committing env examples but ignore actual .env
+!packages/*/.env.example
+packages/*/.env
+packages/*/.env.local

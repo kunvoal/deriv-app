@@ -8,11 +8,11 @@
         "node": "20.x"
     },
     "scripts": {
-        "analyze:stats": "NODE_OPTIONS='-r ts-node/register' webpack --progress --profile --json=stats.json",
+        "analyze:stats": "webpack --progress --profile --json=stats.json",
         "analyze:build": "webpack-bundle-analyzer --no-open -m static -r treemap.html stats.json ./dist && webpack-bundle-analyzer -m json stats.json ./dist",
-        "build": "rimraf dist && NODE_OPTIONS='-r ts-node/register' webpack --progress",
+        "build": "rimraf dist && webpack --progress",
         "build:travis": "rimraf dist && webpack",
-        "serve": "rimraf dist && concurrently \"cross-env BUILD_MODE='serve' NODE_OPTIONS='-r ts-node/register' webpack --progress --watch\" \"tsc -w --noEmit --preserveWatchOutput\"",
+        "serve": "rimraf dist && concurrently \"cross-env BUILD_MODE=serve webpack --progress --watch\" \"tsc -w --noEmit --preserveWatchOutput\"",
         "start": "rimraf dist && npm run test && npm run serve",
         "deploy": "echo \"No deploy specified\"",
         "deploy:clean": "echo \"No deploy:clean specified\"",

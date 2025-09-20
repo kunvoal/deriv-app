@@ -45,6 +45,23 @@ export const loginUrl = ({ language }: TLoginUrl) => {
         date_first_contact ? `&date_first_contact=${date_first_contact}` : ''
     }`;
 
+    // THIRD-PARTY MODE: Check if we're running as a third-party app
+    const isThirdParty = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('ngrok') ||
+                         (!window.location.hostname.includes('deriv.com') && 
+                          !window.location.hostname.includes('deriv.me') && 
+                          !window.location.hostname.includes('deriv.be'));
+    
+    if (isThirdParty) {
+        // Use public OAuth endpoint for third-party apps
+        const third_party_app_id = localStorage.getItem('third_party.app_id') || '101333'; // Your App ID
+        // Use ngrok URL for OAuth redirect (required by Deriv for valid domain)
+        const redirect_url = 'https://18a73fc01690.ngrok-free.app/redirect';
+        
+        return `https://oauth.deriv.com/oauth2/authorize?app_id=${third_party_app_id}&l=${language}${marketing_queries}&brand=${website_name.toLowerCase()}&redirect_uri=${encodeURIComponent(redirect_url)}`;
+    }
+
     const getOAuthUrl = () => {
         return `https://oauth.${
             deriv_urls.DERIV_HOST_NAME

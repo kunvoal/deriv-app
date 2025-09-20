@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Direct WebSocket Test</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            background: #000; 
+            color: #0f0; 
+            padding: 20px; 
+        }
+        button { 
+            background: #f00; 
+            color: #fff; 
+            padding: 10px; 
+            margin: 5px; 
+            border: none; 
+            cursor: pointer; 
+        }
+        #log { 
+            background: #111; 
+            padding: 10px; 
+            height: 500px; 
+            overflow-y: auto; 
+            white-space: pre; 
+        }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .info { color: #0ff; }
+    </style>
+</head>
+<body>
+    <h1>Direct WebSocket Connection Test</h1>
+    <div>
+        <button onclick="testPublicAPI()">Test Public API (No Token)</button>
+        <button onclick="testWithToken()">Test With Your Token</button>
+        <button onclick="testWithTokenAndAppId()">Test Token + App ID</button>
+        <button onclick="testSimplePing()">Test Simple Ping</button>
+        <button onclick="clearLog()">Clear</button>
+    </div>
+    <div id="log"></div>
+
+    <script>
+        let ws;
+        
+        function log(msg, type = 'info') {
+            const el = document.getElementById('log');
+            el.innerHTML += `<span class="${type}">[${new Date().toTimeString().split(' ')[0]}] ${msg}</span>\n`;
+            el.scrollTop = el.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Test 1: Public API without token
+        function testPublicAPI() {
+            log('Testing PUBLIC API (no token needed)...', 'info');
+            
+            if (ws) ws.close();
+            
+            // Use the standard public app_id
+            const url = 'wss://ws.derivws.com/websockets/v3?app_id=1&l=EN&brand=deriv';
+            log('Connecting to: ' + url);
+            
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log('CONNECTED! Sending time request...', 'success');
+                ws.send(JSON.stringify({ time: 1 }));
+            };
+            
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.time) {
+                    log('SUCCESS! Server time: ' + new Date(data.time * 1000), 'success');
+                }
+            };
+            
+            ws.onerror = (e) => {
+                log('ERROR: Connection failed', 'error');
+                console.error('WebSocket error:', e);
+            };
+            
+            ws.onclose = () => {
+                log('Connection closed', 'info');
+            };
+        }
+        
+        // Test 2: With OAuth token
+        function testWithToken() {
+            log('Testing with OAuth token...', 'info');
+            
+            // Get token from storage
+            const loginId = localStorage.getItem('active_loginid');
+            const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+            const account = accounts[loginId];
+            
+            if (!account || !account.token) {
+                log('ERROR: No OAuth token found. Please login first.', 'error');
+                return;
+            }
+            
+            log('Found token for: ' + loginId);
+            
+            if (ws) ws.close();
+            
+            // Connect without app_id when using OAuth token
+            const url = 'wss://ws.derivws.com/websockets/v3?l=EN&brand=deriv';
+            log('Connecting to: ' + url);
+            
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log('CONNECTED! Sending authorize...', 'success');
+                ws.send(JSON.stringify({ 
+                    authorize: account.token 
+                }));
+            };
+            
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.authorize) {
+                    log('SUCCESS! Authorized as: ' + data.authorize.loginid, 'success');
+                    log('Balance: ' + data.authorize.balance + ' ' + data.authorize.currency, 'success');
+                }
+                
+                if (data.error) {
+                    log('ERROR: ' + data.error.message, 'error');
+                }
+            };
+            
+            ws.onerror = (e) => {
+                log('ERROR: Connection failed', 'error');
+                console.error('WebSocket error:', e);
+            };
+            
+            ws.onclose = () => {
+                log('Connection closed', 'info');
+            };
+        }
+        
+        // Test 3: With OAuth token AND app_id
+        function testWithTokenAndAppId() {
+            log('Testing with OAuth token AND app_id=101333...', 'info');
+            
+            // Get token from storage
+            const loginId = localStorage.getItem('active_loginid');
+            const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+            const account = accounts[loginId];
+            
+            if (!account || !account.token) {
+                log('ERROR: No OAuth token found. Please login first.', 'error');
+                return;
+            }
+            
+            log('Found token for: ' + loginId);
+            
+            if (ws) ws.close();
+            
+            // Connect WITH app_id when using OAuth token
+            const url = 'wss://ws.derivws.com/websockets/v3?app_id=101333&l=EN&brand=deriv';
+            log('Connecting to: ' + url);
+            
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log('CONNECTED! Sending authorize...', 'success');
+                ws.send(JSON.stringify({ 
+                    authorize: account.token 
+                }));
+            };
+            
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.authorize) {
+                    log('SUCCESS! Authorized as: ' + data.authorize.loginid, 'success');
+                    log('Balance: ' + data.authorize.balance + ' ' + data.authorize.currency, 'success');
+                    
+                    // Try to get balance subscription
+                    ws.send(JSON.stringify({
+                        balance: 1,
+                        subscribe: 1
+                    }));
+                }
+                
+                if (data.balance) {
+                    log('Balance update: ' + data.balance.balance + ' ' + data.balance.currency, 'info');
+                }
+                
+                if (data.error) {
+                    log('ERROR: ' + data.error.message, 'error');
+                }
+            };
+            
+            ws.onerror = (e) => {
+                log('ERROR: Connection failed', 'error');
+                console.error('WebSocket error:', e);
+            };
+            
+            ws.onclose = () => {
+                log('Connection closed', 'info');
+            };
+        }
+        
+        // Test 4: Simple ping
+        function testSimplePing() {
+            log('Testing simple ping...', 'info');
+            
+            if (ws) ws.close();
+            
+            const url = 'wss://ws.derivws.com/websockets/v3?app_id=1&l=EN&brand=deriv';
+            log('Connecting to: ' + url);
+            
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                log('CONNECTED! Sending ping...', 'success');
+                ws.send(JSON.stringify({ ping: 1 }));
+            };
+            
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.ping) {
+                    log('PONG received!', 'success');
+                } else {
+                    log('Response: ' + JSON.stringify(data));
+                }
+            };
+            
+            ws.onerror = (e) => {
+                log('ERROR: Connection failed', 'error');
+            };
+            
+            ws.onclose = () => {
+                log('Connection closed', 'info');
+            };
+        }
+        
+        // Check token on load
+        window.onload = () => {
+            const loginId = localStorage.getItem('active_loginid');
+            if (loginId) {
+                log('Found stored login: ' + loginId, 'success');
+            } else {
+                log('No stored login found', 'error');
+            }
+        };
+    </script>
+</body>
+</html>

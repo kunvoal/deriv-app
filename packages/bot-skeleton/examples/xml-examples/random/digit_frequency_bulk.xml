@@ -1,0 +1,83 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <variables></variables>
+  <block type="trade_definition" x="0" y="0">
+    <statement name="TRADE_OPTIONS">
+      <block type="trade_definition_market">
+        <next>
+          <block type="trade_definition_tradetype">
+            <next>
+              <block type="trade_definition_contracttype">
+                <next>
+                  <block type="trade_definition_candleinterval">
+                    <field name="CANDLEINTERVAL_LIST">60</field>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+    <statement name="SUBMARKET">
+      <block type="trade_definition_tradeoptions">
+        <field name="CURRENCY_LIST">USD</field>
+        <value name="DURATION">
+          <shadow type="math_number_positive">
+            <field name="NUM">5</field>
+          </shadow>
+        </value>
+        <value name="AMOUNT">
+          <shadow type="math_number_positive">
+            <field name="NUM">1</field>
+          </shadow>
+        </value>
+      </block>
+    </statement>
+  </block>
+  <block type="tick_analysis" x="0" y="360">
+    <statement name="TICKANALYSIS_STACK">
+      <block type="variables_set">
+        <field name="VAR">top_digits</field>
+        <value name="VALUE">
+          <block type="digit_frequency">
+            <value name="ENTRY_COUNT">
+              <shadow type="math_number_positive">
+                <field name="NUM">30</field>
+              </shadow>
+            </value>
+            <field name="TOP_N">7</field>
+            <field name="ORDER">DESC</field>
+          </block>
+        </value>
+      </block>
+    </statement>
+  </block>
+  <block type="before_purchase" x="0" y="600">
+    <statement name="BEFOREPURCHASE_STACK">
+      <block type="variables_set">
+        <field name="VAR">top_digits</field>
+        <value name="VALUE">
+          <block type="digit_frequency">
+            <value name="ENTRY_COUNT">
+              <shadow type="math_number_positive">
+                <field name="NUM">30</field>
+              </shadow>
+            </value>
+            <field name="TOP_N">7</field>
+            <field name="ORDER">DESC</field>
+          </block>
+        </value>
+        <next>
+          <block type="purchase">
+            <field name="BULK_TOGGLE">ON</field>
+            <value name="DIGIT_LIST">
+              <block type="variables_get">
+                <field name="VAR">top_digits</field>
+              </block>
+            </value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>

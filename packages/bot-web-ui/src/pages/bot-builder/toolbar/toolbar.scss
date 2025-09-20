@@ -7,7 +7,7 @@
     position: absolute;
     top: 0;
     inset-inline-start: 23.2rem;
-    background-color: var(--general-main-1);
+    background-color: var(--bot-toolbar-bg);
 
     @include mobile-or-tablet-screen {
         height: 64px;
@@ -28,6 +28,11 @@
     z-index: 1;
     &__btn {
         background-color: var(--button-primary-default) !important;
+
+        &:focus-visible {
+            outline: 2px solid var(--bot-focus);
+            outline-offset: 2px;
+        }
 
         &--icon {
             display: flex;
@@ -75,6 +80,11 @@
         height: 1.6rem;
         width: 1.6rem;
         fill: var(--text-prominent);
+
+        &:focus-visible {
+            outline: 2px solid var(--bot-focus);
+            outline-offset: 2px;
+        }
 
         @include mobile-or-tablet-screen {
             margin: 1.2rem;

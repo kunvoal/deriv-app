@@ -33,6 +33,18 @@ const BinarySocketBase = (() => {
         if (is_mock_server) {
             return 'ws://127.0.0.1:42069';
         }
+        
+        // For third-party OAuth, we need to use ws.derivws.com instead of green.derivws.com
+        const isThirdPartyAuth = localStorage.getItem('third_party.app_id') === '101333' ||
+                                sessionStorage.getItem('third_party_auth') === 'true';
+        
+        if (isThirdPartyAuth) {
+            // Use ws.derivws.com for OAuth tokens with the registered app_id
+            const thirdPartyAppId = localStorage.getItem('third_party.app_id') || '101333';
+            return `wss://ws.derivws.com/websockets/v3?app_id=${thirdPartyAppId}&l=${language}&brand=${website_name.toLowerCase()}`;
+        }
+        
+        // Standard Deriv app with normal app_id in URL
         return `wss://${getSocketURL()}/websockets/v3?app_id=${getAppId()}&l=${language}&brand=${website_name.toLowerCase()}`;
     };
 
@@ -95,7 +107,15 @@ const BinarySocketBase = (() => {
 
             wait('website_status');
 
-            if (client_store.is_logged_in) {
+            // Check for third-party OAuth tokens first
+            const isThirdPartyAuth = sessionStorage.getItem('third_party_auth') === 'true';
+            const thirdPartyToken = sessionStorage.getItem('active_token');
+            
+            if (isThirdPartyAuth && thirdPartyToken) {
+                console.log('[Third-Party WS] Authorizing with OAuth token');
+                // Send the OAuth token for authorization
+                deriv_api.authorize(thirdPartyToken);
+            } else if (client_store.is_logged_in) {
                 const authorize_token = client_store.getToken();
                 deriv_api.authorize(authorize_token);
             }
