@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv OAuth Callback</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .tokens {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+        .instructions {
+            background: #e7f3ff;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #b3d9ff;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #004085;
+        }
+        .instructions code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 1rem;
+        }
+        button:hover {
+            background: #5a3785;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Deriv OAuth Callback</h1>
+        <div id="status" class="status">Processing authentication...</div>
+        <div id="tokens" class="tokens" style="display: none;"></div>
+        
+        <div class="instructions" id="instructions" style="display: none;">
+            <h3>✅ Authentication Successful!</h3>
+            <p>Your tokens have been extracted. Now you need to:</p>
+            <ol>
+                <li>Copy the tokens above</li>
+                <li>Go back to your local development environment</li>
+                <li>Open browser console at <code>https://localhost:8443</code></li>
+                <li>Paste this command with your token:<br>
+                    <code>localStorage.setItem('auth_token', 'YOUR_TOKEN_HERE')</code>
+                </li>
+                <li>Refresh the page to login</li>
+            </ol>
+        </div>
+        
+        <button id="copyBtn" style="display: none;" onclick="copyTokens()">📋 Copy Token Data</button>
+    </div>
+
+    <script>
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const statusEl = document.getElementById('status');
+        const tokensEl = document.getElementById('tokens');
+        const instructionsEl = document.getElementById('instructions');
+        const copyBtn = document.getElementById('copyBtn');
+        
+        // Extract accounts from URL
+        const accounts = [];
+        let tokenData = {};
+        
+        // Check for OAuth tokens in URL
+        let i = 1;
+        while (urlParams.has(`acct${i}`)) {
+            const account = {
+                loginid: urlParams.get(`acct${i}`),
+                token: urlParams.get(`token${i}`),
+                currency: urlParams.get(`cur${i}`)
+            };
+            accounts.push(account);
+            i++;
+        }
+        
+        if (accounts.length > 0) {
+            // Success! Show tokens
+            statusEl.className = 'status success';
+            statusEl.textContent = `✅ Authentication successful! Found ${accounts.length} account(s).`;
+            
+            // Display token data
+            tokenData = {
+                app_id: '101333',
+                accounts: accounts,
+                active_account: accounts.find(a => a.loginid.startsWith('CR')) || accounts[0]
+            };
+            
+            tokensEl.style.display = 'block';
+            tokensEl.innerHTML = `<strong>Token Data:</strong><br><pre>${JSON.stringify(tokenData, null, 2)}</pre>`;
+            
+            instructionsEl.style.display = 'block';
+            copyBtn.style.display = 'block';
+            
+            // Also try to send to parent window if opened as popup
+            if (window.opener) {
+                window.opener.postMessage({
+                    type: 'oauth-success',
+                    data: tokenData
+                }, '*');
+                
+                setTimeout(() => {
+                    statusEl.textContent += ' Closing window...';
+                    window.close();
+                }, 3000);
+            }
+        } else {
+            // Check for error
+            const error = urlParams.get('error');
+            if (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Authentication failed: ${error}`;
+                if (urlParams.get('error_description')) {
+                    statusEl.textContent += ` - ${urlParams.get('error_description')}`;
+                }
+            } else {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ No authentication data found. Please try logging in again.';
+            }
+        }
+        
+        // Copy tokens function
+        function copyTokens() {
+            const textToCopy = JSON.stringify(tokenData);
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                copyBtn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy Token Data';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select and copy manually.');
+            });
+        }
+        
+        // Auto-save to localStorage if on same domain
+        if (accounts.length > 0 && window.location.hostname === 'localhost') {
+            localStorage.setItem('deriv_oauth_tokens', JSON.stringify(tokenData));
+            statusEl.textContent += ' (Saved to local storage)';
+        }
+    </script>
+</body>
+</html>

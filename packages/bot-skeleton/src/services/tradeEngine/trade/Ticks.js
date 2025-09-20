@@ -87,6 +87,26 @@ export default Engine =>
             return digits;
         }
 
+        getDigitFrequencyList({ entry_count = 30, top_n = 7, order = 'DESC' } = {}) {
+            return new Promise(resolve =>
+                this.getTicks().then(ticks => {
+                    const digits = this.getLastDigitsFromList(ticks);
+                    const recent = digits.slice(-Math.max(1, Number(entry_count) || 30));
+                    const freq = new Array(10).fill(0);
+                    recent.forEach(d => {
+                        const idx = Number(d);
+                        if (!Number.isNaN(idx) && idx >= 0 && idx <= 9) freq[idx] += 1;
+                    });
+                    const ranked = [...Array(10).keys()].sort((a, b) => {
+                        const diff = freq[b] - freq[a];
+                        return order === 'ASC' ? -diff : diff;
+                    });
+                    const result = ranked.slice(0, Math.max(1, Math.min(10, Number(top_n) || 7)));
+                    resolve(result);
+                })
+            );
+        }
+
         checkDirection(dir) {
             return new Promise(resolve =>
                 this.$scope.ticksService

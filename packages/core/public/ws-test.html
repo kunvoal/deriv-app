@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test - OAuth Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0e0e0e;
+            color: #00ff00;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #ff444f;
+        }
+        button {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #e63946;
+        }
+        .log {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .success {
+            color: #00ff00;
+        }
+        .error {
+            color: #ff0000;
+        }
+        .info {
+            color: #00a79e;
+        }
+        .warning {
+            color: #ffa500;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket Connection Test</h1>
+        
+        <div>
+            <h3>OAuth Token Info:</h3>
+            <div id="tokenInfo"></div>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <h3>Test Different Connection Methods:</h3>
+            <button onclick="testConnection1()">Test 1: With app_id in URL</button>
+            <button onclick="testConnection2()">Test 2: Without app_id in URL</button>
+            <button onclick="testConnection3()">Test 3: With app_id in authorize</button>
+            <button onclick="testConnection4()">Test 4: Blue server (Demo)</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toTimeString().split(' ')[0];
+            const className = type;
+            logEl.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function showTokenInfo() {
+            const activeLoginId = localStorage.getItem('active_loginid');
+            const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+            const account = accounts[activeLoginId];
+            const token = sessionStorage.getItem('active_token');
+            
+            const infoEl = document.getElementById('tokenInfo');
+            if (activeLoginId && account) {
+                infoEl.innerHTML = `
+                    <div style="background: #2a2a2a; padding: 10px; border-radius: 5px;">
+                        <div>Login ID: <span class="info">${activeLoginId}</span></div>
+                        <div>Account Type: <span class="info">${account.is_virtual ? 'Demo' : 'Real'}</span></div>
+                        <div>Currency: <span class="info">${account.currency}</span></div>
+                        <div>Token: <span class="info">${token ? token.substring(0, 20) + '...' : 'Not found'}</span></div>
+                        <div>App ID: <span class="info">101333</span></div>
+                    </div>
+                `;
+            } else {
+                infoEl.innerHTML = '<div class="error">No OAuth tokens found. Please login first.</div>';
+            }
+        }
+        
+        function closeWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+        
+        function testConnection1() {
+            closeWebSocket();
+            log('Test 1: Connecting WITH app_id=101333 in URL...', 'warning');
+            
+            const token = sessionStorage.getItem('active_token');
+            if (!token) {
+                // Try to get from localStorage
+                const loginId = localStorage.getItem('active_loginid');
+                const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+                if (accounts[loginId]) {
+                    sessionStorage.setItem('active_token', accounts[loginId].token);
+                }
+            }
+            
+            const wsUrl = 'wss://green.derivws.com/websockets/v3?app_id=101333&l=EN&brand=deriv';
+            log('URL: ' + wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log('WebSocket CONNECTED!', 'success');
+                log('Sending authorize with token...');
+                
+                const token = sessionStorage.getItem('active_token');
+                ws.send(JSON.stringify({
+                    authorize: token
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.msg_type === 'authorize' && data.authorize) {
+                    log('AUTHORIZED! Account: ' + data.authorize.loginid, 'success');
+                }
+                if (data.error) {
+                    log('ERROR: ' + data.error.message, 'error');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket ERROR', 'error');
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket CLOSED', 'warning');
+            };
+        }
+        
+        function testConnection2() {
+            closeWebSocket();
+            log('Test 2: Connecting WITHOUT app_id in URL...', 'warning');
+            
+            const wsUrl = 'wss://green.derivws.com/websockets/v3?l=EN&brand=deriv';
+            log('URL: ' + wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log('WebSocket CONNECTED!', 'success');
+                log('Sending authorize with token...');
+                
+                const token = sessionStorage.getItem('active_token');
+                ws.send(JSON.stringify({
+                    authorize: token
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.msg_type === 'authorize' && data.authorize) {
+                    log('AUTHORIZED! Account: ' + data.authorize.loginid, 'success');
+                }
+                if (data.error) {
+                    log('ERROR: ' + data.error.message, 'error');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket ERROR', 'error');
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket CLOSED', 'warning');
+            };
+        }
+        
+        function testConnection3() {
+            closeWebSocket();
+            log('Test 3: Connecting WITH app_id in authorize message...', 'warning');
+            
+            const wsUrl = 'wss://green.derivws.com/websockets/v3?l=EN&brand=deriv';
+            log('URL: ' + wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log('WebSocket CONNECTED!', 'success');
+                log('Sending authorize with token AND app_id...');
+                
+                const token = sessionStorage.getItem('active_token');
+                ws.send(JSON.stringify({
+                    authorize: token,
+                    add_to_login_history: 1
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.msg_type === 'authorize' && data.authorize) {
+                    log('AUTHORIZED! Account: ' + data.authorize.loginid, 'success');
+                    
+                    // Try to get balance
+                    ws.send(JSON.stringify({
+                        balance: 1,
+                        subscribe: 1
+                    }));
+                }
+                if (data.error) {
+                    log('ERROR: ' + data.error.message, 'error');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket ERROR', 'error');
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket CLOSED', 'warning');
+            };
+        }
+        
+        function testConnection4() {
+            closeWebSocket();
+            log('Test 4: Connecting to BLUE server (Demo)...', 'warning');
+            
+            const wsUrl = 'wss://blue.derivws.com/websockets/v3?app_id=101333&l=EN&brand=deriv';
+            log('URL: ' + wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                log('WebSocket CONNECTED!', 'success');
+                log('Sending authorize with token...');
+                
+                const token = sessionStorage.getItem('active_token');
+                ws.send(JSON.stringify({
+                    authorize: token
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log('Response: ' + JSON.stringify(data, null, 2));
+                
+                if (data.msg_type === 'authorize' && data.authorize) {
+                    log('AUTHORIZED! Account: ' + data.authorize.loginid, 'success');
+                }
+                if (data.error) {
+                    log('ERROR: ' + data.error.message, 'error');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket ERROR', 'error');
+            };
+            
+            ws.onclose = () => {
+                log('WebSocket CLOSED', 'warning');
+            };
+        }
+        
+        // Show token info on load
+        window.onload = function() {
+            showTokenInfo();
+            log('WebSocket Test Ready. Click a button to test connection.');
+        };
+    </script>
+</body>
+</html>

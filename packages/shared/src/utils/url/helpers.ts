@@ -27,6 +27,21 @@ export const getUrlSmartTrader = () => {
     const url_lang = URLUtils.getQueryParameter('lang');
     const i18n_language = localize_language || url_lang || 'en';
 
+    // Check if we're in a third-party context
+    const hasOAuthTokens = typeof window !== 'undefined' && 
+        (sessionStorage.getItem('authToken') || localStorage.getItem('authToken'));
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isOfficialDomain = hostname.includes('.deriv.com') || 
+                              hostname.includes('.deriv.me') || 
+                              hostname.includes('.deriv.be') ||
+                              hostname.includes('.binary.com');
+    const isThirdPartyApp = hasOAuthTokens || !isOfficialDomain;
+    
+    // For third-party apps, return internal route
+    if (isThirdPartyApp) {
+        return `/smarttrader?lang=${i18n_language.toLowerCase()}`;
+    }
+
     let base_link = '';
 
     if (is_staging_deriv_app) {
@@ -39,10 +54,26 @@ export const getUrlSmartTrader = () => {
 };
 
 export const getUrlBot = () => {
-    const { is_staging_deriv_app } = getPlatformFromUrl();
+    const { is_staging_deriv_app, is_deriv_app } = getPlatformFromUrl();
     const localize_language = LocalStorageUtils.getValue<string>('i18n_language');
     const url_lang = URLUtils.getQueryParameter('lang');
     const i18n_language = localize_language || url_lang || 'en';
+
+    // Check if we're in a third-party context (OAuth tokens present or not on official Deriv domain)
+    const hasOAuthTokens = typeof window !== 'undefined' && 
+        (sessionStorage.getItem('authToken') || localStorage.getItem('authToken'));
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isOfficialDomain = hostname.includes('.deriv.com') || 
+                              hostname.includes('.deriv.me') || 
+                              hostname.includes('.deriv.be') ||
+                              hostname.includes('.binary.com');
+    const isThirdPartyApp = hasOAuthTokens || !isOfficialDomain;
+    
+    // If not on an official Deriv domain (staging/app) or third-party app, prefer internal route to our local DBot UI
+    const is_official_deriv_host = is_staging_deriv_app || is_deriv_app;
+    if (!is_official_deriv_host || isThirdPartyApp) {
+        return `/bot?lang=${i18n_language.toLowerCase()}`;
+    }
 
     let base_link = '';
 

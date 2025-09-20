@@ -15,7 +15,8 @@
     position: absolute;
     inset-inline-start: 250px;
     top: 0;
-    background-color: var(--general-main-2);
+    background-color: var(--bot-flyout-bg);
+    border-top: 3px solid var(--bot-accent-purple);
     height: calc(100vh - 232px);
     max-height: calc(100vh - 232px);
     z-index: 11;
@@ -26,6 +27,11 @@
     box-shadow: 0 2px 8px 0 var(--shadow-box);
     min-width: 400px;
     visibility: hidden;
+
+    &:focus-within {
+        outline: 2px solid var(--bot-focus);
+        outline-offset: 2px;
+    }
 
     &__item:hover {
         .flyout__button-add--hide {
@@ -131,7 +137,7 @@
             cursor: pointer;
             font-weight: bold;
             display: block;
-            color: $COLOR_RED;
+            color: var(--bot-accent-orange);
         }
         &-description {
             font-size: var(--text-size-xs);
@@ -158,7 +164,7 @@
         &-header {
             padding: 15px;
             display: flex;
-            background-color: var(--general-section-1);
+            background-color: var(--bot-surface);
         }
         &-content {
             padding: 1.5em;

@@ -19,11 +19,30 @@ Blockly.Blocks.purchase = {
                     options: [['', '']],
                 },
             ],
+            message1: localize('Bulk {{ bulk_toggle }}', { bulk_toggle: '%1' }),
+            args1: [
+                {
+                    type: 'field_dropdown',
+                    name: 'BULK_TOGGLE',
+                    options: [
+                        [localize('OFF'), 'OFF'],
+                        [localize('ON'), 'ON'],
+                    ],
+                },
+            ],
+            message2: localize('Digit List: {{ list }}', { list: '%1' }),
+            args2: [
+                {
+                    type: 'input_value',
+                    name: 'DIGIT_LIST',
+                    check: 'Array',
+                },
+            ],
             previousStatement: null,
             colour: Blockly.Colours.Special1.colour,
             colourSecondary: Blockly.Colours.Special1.colourSecondary,
             colourTertiary: Blockly.Colours.Special1.colourTertiary,
-            tooltip: localize('This block purchases contract of a specified type.'),
+            tooltip: localize('This block purchases contract of a specified type. Enable Bulk to purchase sequentially for a list of digits.'),
             category: Blockly.Categories.Before_Purchase,
         };
     },
@@ -34,6 +53,8 @@ Blockly.Blocks.purchase = {
                 'Use this block to purchase the specific contract you want. You may add multiple Purchase blocks together with conditional blocks to define your purchase conditions. This block can only be used within the Purchase conditions block.'
             ),
             key_words: localize('buy'),
+            // Map to help content group to enable in-UI helper
+            help_group: 'digit_frequency_bulk',
         };
     },
     onchange(event) {
@@ -43,9 +64,13 @@ Blockly.Blocks.purchase = {
 
         if (event.type === Blockly.Events.BLOCK_CREATE && event.ids.includes(this.id)) {
             this.populatePurchaseList(event);
+            this.updateBulkUI();
         } else if (event.type === Blockly.Events.BLOCK_CHANGE) {
             if (event.name === 'TYPE_LIST' || event.name === 'TRADETYPE_LIST') {
                 this.populatePurchaseList(event);
+            }
+            if (event.blockId === this.id && event.name === 'BULK_TOGGLE') {
+                this.updateBulkUI();
             }
         } else if (event.type === Blockly.Events.BLOCK_DRAG && !event.isStart && event.blockId === this.id) {
             const purchase_type_list = this.getField('PURCHASE_LIST');
@@ -53,6 +78,30 @@ Blockly.Blocks.purchase = {
 
             if (purchase_options[0][0] === '') {
                 this.populatePurchaseList(event);
+            }
+            this.updateBulkUI();
+        }
+    },
+    updateBulkUI() {
+        const bulk_toggle = this.getFieldValue('BULK_TOGGLE');
+        const input = this.getInput('DIGIT_LIST');
+        if (bulk_toggle === 'ON') {
+            if (!input.connection.targetConnection) {
+                // Provide a default shadow list if nothing is connected
+                const shadow_block = this.workspace.newBlock('lists_create_with');
+                shadow_block.setShadow(true);
+                shadow_block.initSvg();
+                shadow_block.renderEfficiently();
+                input.connection.connect(shadow_block.outputConnection);
+            }
+        } else {
+            if (input && input.connection && input.connection.targetBlock()) {
+                const target = input.connection.targetBlock();
+                if (target && target.isShadow()) {
+                    target.dispose(true);
+                } else {
+                    input.connection.disconnect();
+                }
             }
         }
     },
@@ -83,7 +132,18 @@ Blockly.Blocks.purchase = {
 
 Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
     const purchaseList = block.getFieldValue('PURCHASE_LIST');
+    const bulk_toggle = block.getFieldValue('BULK_TOGGLE') || 'OFF';
+    const digit_list_code =
+        Blockly.JavaScript.javascriptGenerator.valueToCode(
+            block,
+            'DIGIT_LIST',
+            Blockly.JavaScript.javascriptGenerator.ORDER_ATOMIC
+        ) || '[]';
 
-    const code = `Bot.purchase('${purchaseList}');\n`;
+    if (bulk_toggle === 'ON') {
+        const code = `Bot.setBulkPurchase(true, ${digit_list_code});\nBot.purchase('${purchaseList}');\n`;
+        return code;
+    }
+    const code = `Bot.setBulkPurchase(false, []);\nBot.purchase('${purchaseList}');\n`;
     return code;
 };

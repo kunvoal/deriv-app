@@ -11,6 +11,7 @@ import { checkAndSetEndpointFromUrl } from '@deriv/shared';
 import AppNotificationMessages from './App/Containers/app-notification-messages.jsx';
 import { AnalyticsInitializer } from 'Utils/Analytics';
 import { getActiveAccounts, isTmbEnabled } from '@deriv/utils';
+import { initThirdPartyAuth } from './third-party-init';
 
 AnalyticsInitializer();
 if (
@@ -26,8 +27,26 @@ const has_endpoint_url = checkAndSetEndpointFromUrl();
 // if has endpoint url, APP will be redirected
 if (!has_endpoint_url) {
     const initApp = async () => {
-        const is_tmb_enabled = await isTmbEnabled();
-        const accounts = await getActiveAccounts();
+        // Check for third-party OAuth tokens first
+        const thirdPartyAuth = initThirdPartyAuth();
+        
+        // Skip OAuth sessions check for third-party apps (causes CORS issues)
+        const isThirdParty = window.location.hostname.includes('ngrok') || 
+                            window.location.hostname === 'localhost' ||
+                            thirdPartyAuth.isAuthenticated;
+        
+        let accounts = null;
+        let is_tmb_enabled = false;
+        
+        if (!isThirdParty) {
+            is_tmb_enabled = await isTmbEnabled();
+            accounts = await getActiveAccounts();
+        } else if (thirdPartyAuth.isAuthenticated) {
+            // Use third-party OAuth accounts
+            console.log('[Third-Party] Using OAuth accounts for:', thirdPartyAuth.loginId);
+            accounts = thirdPartyAuth.accounts;
+        }
+        
         const root_store = is_tmb_enabled
             ? initStore(AppNotificationMessages, accounts)
             : initStore(AppNotificationMessages);

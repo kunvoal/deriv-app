@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Third-Party Login - kunstrike97</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0e0e0e;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #151515;
+            padding: 20px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        
+        .login-card {
+            background: #2a2a2a;
+            padding: 40px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #ff444f;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #999;
+            margin-bottom: 30px;
+        }
+        
+        .login-btn {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        
+        .login-btn:hover {
+            background: #e63946;
+        }
+        
+        .info-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #3a3a3a;
+            text-align: left;
+        }
+        
+        .info-title {
+            color: #00a79e;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .info-list {
+            color: #999;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .info-list li {
+            margin-bottom: 8px;
+            list-style-position: inside;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .status.checking {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+        
+        .status.logged-in {
+            background: rgba(0, 167, 158, 0.1);
+            color: #00a79e;
+        }
+        
+        .account-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            text-align: left;
+        }
+        
+        .account-info h3 {
+            color: #00a79e;
+            margin-bottom: 15px;
+        }
+        
+        .account-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        .account-detail:last-child {
+            border-bottom: none;
+        }
+        
+        .label {
+            color: #999;
+        }
+        
+        .value {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .logout-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .logout-btn:hover {
+            background: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h2 style="color: #ff444f;">Deriv Third-Party App - kunstrike97</h2>
+        </div>
+    </div>
+    
+    <div class="main">
+        <div class="login-card">
+            <h1>Login to Trade</h1>
+            <p class="subtitle">Connect your Deriv account to start trading</p>
+            
+            <div id="loginSection">
+                <button class="login-btn" onclick="loginWithDeriv()">
+                    Login with Deriv Account
+                </button>
+                
+                <div class="info-section">
+                    <div class="info-title">What happens when you login:</div>
+                    <ul class="info-list">
+                        <li>You'll be redirected to Deriv's secure OAuth page</li>
+                        <li>Login with your Deriv email, password, and 2FA</li>
+                        <li>Authorize the app to access your account</li>
+                        <li>Get redirected back with your account details</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="loggedInSection" style="display: none;">
+                <div class="status logged-in">
+                    ✓ Successfully logged in
+                </div>
+                
+                <div class="account-info">
+                    <h3>Account Information</h3>
+                    <div class="account-detail">
+                        <span class="label">Login ID:</span>
+                        <span class="value" id="loginId">-</span>
+                    </div>
+                    <div class="account-detail">
+                        <span class="label">Currency:</span>
+                        <span class="value" id="currency">-</span>
+                    </div>
+                    <div class="account-detail">
+                        <span class="label">Balance:</span>
+                        <span class="value" id="balance">Loading...</span>
+                    </div>
+                    <div class="account-detail">
+                        <span class="label">Account Type:</span>
+                        <span class="value" id="accountType">-</span>
+                    </div>
+                </div>
+                
+                <button class="logout-btn" onclick="logoutUser()">Logout</button>
+            </div>
+            
+            <div id="checkingStatus" class="status checking" style="display: none;">
+                Checking login status...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // OAuth configuration
+        const OAUTH_CONFIG = {
+            APP_ID: '101333',
+            OAUTH_URL: 'https://oauth.deriv.com/oauth2/authorize',
+            REDIRECT_URL: 'https://39c391c961ce.ngrok-free.app/redirect'
+        };
+        
+        // WebSocket instance
+        let ws = null;
+        
+        // Check login status on page load
+        window.onload = function() {
+            checkLoginStatus();
+        };
+        
+        function checkLoginStatus() {
+            const checkingEl = document.getElementById('checkingStatus');
+            checkingEl.style.display = 'block';
+            
+            const loginId = localStorage.getItem('active_loginid');
+            let token = sessionStorage.getItem('active_token');
+            
+            // If no token in sessionStorage, try to get it from localStorage
+            if (!token && loginId) {
+                const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+                if (accounts[loginId]) {
+                    token = accounts[loginId].token;
+                    // Store it in sessionStorage for WebSocket
+                    sessionStorage.setItem('active_token', token);
+                    sessionStorage.setItem('active_loginid', loginId);
+                }
+            }
+            
+            setTimeout(() => {
+                checkingEl.style.display = 'none';
+                
+                if (loginId && token) {
+                    showLoggedInView(loginId);
+                    connectWebSocket(token);
+                } else {
+                    showLoginView();
+                }
+            }, 500);
+        }
+        
+        function loginWithDeriv() {
+            // Build OAuth URL
+            const params = new URLSearchParams({
+                app_id: OAUTH_CONFIG.APP_ID,
+                l: 'en',
+                brand: 'deriv',
+                redirect_uri: OAUTH_CONFIG.REDIRECT_URL
+            });
+            
+            const oauthUrl = `${OAUTH_CONFIG.OAUTH_URL}?${params.toString()}`;
+            
+            // Log the OAuth URL for debugging
+            console.log('OAuth Configuration:', OAUTH_CONFIG);
+            console.log('OAuth URL:', oauthUrl);
+            console.log('Redirect URI:', OAUTH_CONFIG.REDIRECT_URL);
+            
+            // Store current page to redirect back  
+            // Include the filename for proper redirect
+            sessionStorage.setItem('redirect_url', '/login-test.html');
+            
+            // Redirect to OAuth
+            alert('Redirecting to Deriv OAuth. After login, you should return to /redirect then /login-test.html');
+            window.location.href = oauthUrl;
+        }
+        
+        function showLoginView() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('loggedInSection').style.display = 'none';
+        }
+        
+        function showLoggedInView(loginId) {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('loggedInSection').style.display = 'block';
+            
+            // Get account details from storage
+            const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+            const account = accounts[loginId];
+            
+            if (account) {
+                document.getElementById('loginId').textContent = loginId;
+                document.getElementById('currency').textContent = account.currency || 'USD';
+                document.getElementById('accountType').textContent = 
+                    account.is_virtual ? 'Demo Account' : 'Real Account';
+            }
+        }
+        
+        function connectWebSocket(token) {
+            const loginId = localStorage.getItem('active_loginid');
+            const accounts = JSON.parse(localStorage.getItem('client.accounts') || '{}');
+            const account = accounts[loginId];
+            
+            if (!account) return;
+            
+            // Choose WebSocket server based on account type
+            const wsUrl = account.is_virtual 
+                ? 'wss://blue.derivws.com/websockets/v3'
+                : 'wss://green.derivws.com/websockets/v3';
+            
+            // IMPORTANT: Don't put app_id in URL for third-party apps with tokens
+            const url = `${wsUrl}?l=en&brand=deriv`;
+            
+            console.log('Connecting to WebSocket:', url);
+            console.log('Using token:', token.substring(0, 10) + '...');
+            ws = new WebSocket(url);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected, authorizing...');
+                
+                // Send authorization
+                ws.send(JSON.stringify({
+                    authorize: token
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('WebSocket message:', data);
+                
+                if (data.msg_type === 'authorize' && data.authorize) {
+                    console.log('Authorized! Getting balance...');
+                    
+                    // Subscribe to balance
+                    ws.send(JSON.stringify({
+                        balance: 1,
+                        subscribe: 1
+                    }));
+                }
+                
+                if (data.msg_type === 'balance' && data.balance) {
+                    document.getElementById('balance').textContent = 
+                        `${data.balance.currency} ${parseFloat(data.balance.balance).toFixed(2)}`;
+                }
+                
+                if (data.error) {
+                    console.error('WebSocket error:', data.error);
+                    document.getElementById('balance').textContent = 'Error loading balance';
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                document.getElementById('balance').textContent = 'Connection error';
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+            };
+        }
+        
+        function logoutUser() {
+            // Close WebSocket
+            if (ws) {
+                ws.close();
+            }
+            
+            // Clear storage
+            const keysToRemove = [
+                'client.accounts',
+                'active_loginid',
+                'oauth_completed'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            // Clear session storage
+            sessionStorage.clear();
+            
+            // Reload page
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Third-Party Cleanup</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #ff444f;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #e63946;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+        }
+        .success {
+            color: #28a745;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .info {
+            background: #f0f8ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Third-Party Setup Cleanup</h1>
+        
+        <div class="info">
+            <strong>This will clean up all development configurations and set up your app as a pure third-party client:</strong>
+            <ul>
+                <li>Remove all endpoint configurations</li>
+                <li>Clear all authentication tokens</li>
+                <li>Set correct App ID (101333)</li>
+                <li>Remove debug settings</li>
+            </ul>
+        </div>
+
+        <button onclick="performCleanup()">🚀 Clean & Setup Third-Party Mode</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function performCleanup() {
+            const statusEl = document.getElementById('status');
+            
+            // 1. Remove all endpoint/server configurations
+            localStorage.removeItem('config.server_url');
+            localStorage.removeItem('debug_service_worker');
+            sessionStorage.removeItem('config.platform');
+            
+            // 2. Clear all authentication data
+            const authKeys = [
+                'client.accounts',
+                'client.active_loginid',
+                'client.active_token',
+                'active_loginid',
+                'active_wallet_loginid',
+                'client.token',
+                'deriv_real_token',
+                'deriv_demo_token',
+                'oauth_response',
+                'deriv_oauth_tokens',
+                'current_loginid'
+            ];
+            
+            authKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            // 3. Set correct third-party app ID
+            localStorage.setItem('config.app_id', '101333');
+            localStorage.setItem('third_party.app_id', '101333');
+            
+            // 4. Remove any redirect URLs or OAuth state
+            sessionStorage.removeItem('redirect_url');
+            sessionStorage.removeItem('oauth_completed');
+            
+            // 5. Clear feature flags that might interfere
+            localStorage.removeItem('config.feature_flags');
+            
+            // 6. Show success
+            statusEl.innerHTML = `
+                <div class="success">
+                    ✅ Cleanup Complete!
+                </div>
+                <div class="info" style="margin-top: 20px;">
+                    <strong>Your app is now in pure third-party mode!</strong><br><br>
+                    <strong>Next Steps:</strong><br>
+                    1. The page will reload in 3 seconds<br>
+                    2. You'll see the login page<br>
+                    3. Click "Log in" to authenticate via OAuth<br>
+                    4. After login, you'll have access to the trading platform<br><br>
+                    <strong>Configuration:</strong><br>
+                    • App ID: <code>101333</code><br>
+                    • OAuth URL: <code>oauth.deriv.com</code><br>
+                    • Redirect: <code>https://18a73fc01690.ngrok-free.app/redirect</code>
+                </div>
+            `;
+            
+            // Reload after 3 seconds
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

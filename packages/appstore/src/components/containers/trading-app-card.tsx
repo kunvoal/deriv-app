@@ -141,21 +141,53 @@ const TradingAppCard = ({
             ]);
         }
 
+        // Check if we're in a third-party context (OAuth tokens present or not on official Deriv domain)
+        const isThirdPartyApp = () => {
+            const hasOAuthTokens = sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+            const hostname = window.location.hostname;
+            const isOfficialDomain = hostname.includes('.deriv.com') || 
+                                      hostname.includes('.deriv.me') || 
+                                      hostname.includes('.deriv.be') ||
+                                      hostname.includes('.binary.com');
+            return hasOAuthTokens || !isOfficialDomain;
+        };
+
         if (is_deriv_platform) {
-            switch (name) {
-                case DERIV_PLATFORM_NAMES.TRADER:
-                    window.open(getStaticUrl(`/dtrader`));
-                    break;
-                case DERIV_PLATFORM_NAMES.DBOT:
-                    window.open(getStaticUrl(`/dbot`));
-                    break;
-                case DERIV_PLATFORM_NAMES.SMARTTRADER:
-                    window.open(getUrlSmartTrader());
-                    break;
-                case DERIV_PLATFORM_NAMES.GO:
-                    window.open(getStaticUrl('/deriv-go'));
-                    break;
-                default:
+            // For third-party apps, use internal navigation instead of opening new windows
+            if (isThirdPartyApp()) {
+                switch (name) {
+                    case DERIV_PLATFORM_NAMES.TRADER:
+                        window.location.href = '/dtrader';
+                        break;
+                    case DERIV_PLATFORM_NAMES.DBOT:
+                        window.location.href = '/bot';
+                        break;
+                    case DERIV_PLATFORM_NAMES.SMARTTRADER:
+                        // SmartTrader might still need external URL
+                        window.location.href = '/smarttrader';
+                        break;
+                    case DERIV_PLATFORM_NAMES.GO:
+                        window.location.href = '/deriv-go';
+                        break;
+                    default:
+                }
+            } else {
+                // Original behavior for official Deriv app
+                switch (name) {
+                    case DERIV_PLATFORM_NAMES.TRADER:
+                        window.open(getStaticUrl(`/dtrader`));
+                        break;
+                    case DERIV_PLATFORM_NAMES.DBOT:
+                        window.open(getStaticUrl(`/dbot`));
+                        break;
+                    case DERIV_PLATFORM_NAMES.SMARTTRADER:
+                        window.open(getUrlSmartTrader());
+                        break;
+                    case DERIV_PLATFORM_NAMES.GO:
+                        window.open(getStaticUrl('/deriv-go'));
+                        break;
+                    default:
+                }
             }
         }
         if (platform === CFD_PLATFORMS.MT5 && availability === 'EU')

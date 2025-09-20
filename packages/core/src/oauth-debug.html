@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Debug Tool</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        h1 {
+            color: #ff444f;
+            border-bottom: 2px solid #ff444f;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #ffa500;
+            margin-top: 30px;
+        }
+        .section {
+            background: #2d2d2d;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+        .key {
+            color: #87ceeb;
+            font-weight: bold;
+        }
+        .value {
+            color: #98fb98;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .warning {
+            color: #ffa500;
+        }
+        .success {
+            color: #00ff00;
+        }
+        button {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #e63946;
+        }
+        pre {
+            background: #0d0d0d;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 10px;
+            align-items: start;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 OAuth Debug Tool - kunstrike97</h1>
+    
+    <div class="section">
+        <h2>Quick Actions</h2>
+        <button onclick="clearAllAuth()">🗑️ Clear ALL Auth Data</button>
+        <button onclick="setThirdPartyMode()">🎯 Set Third-Party Mode</button>
+        <button onclick="testWebSocket()">📡 Test WebSocket Connection</button>
+        <button onclick="window.location.reload()">🔄 Reload Page</button>
+    </div>
+
+    <div class="section">
+        <h2>Current Configuration</h2>
+        <div id="config"></div>
+    </div>
+
+    <div class="section">
+        <h2>OAuth Tokens</h2>
+        <div id="tokens"></div>
+    </div>
+
+    <div class="section">
+        <h2>Storage Analysis</h2>
+        <div id="storage"></div>
+    </div>
+
+    <div class="section">
+        <h2>WebSocket Test</h2>
+        <div id="ws-test"></div>
+    </div>
+
+    <script>
+        // Expected App ID for third-party
+        const EXPECTED_APP_ID = '101333';
+        
+        // Function to display configuration
+        function displayConfig() {
+            const config = document.getElementById('config');
+            const currentUrl = window.location.href;
+            const isNgrok = currentUrl.includes('ngrok');
+            const isLocalhost = currentUrl.includes('localhost');
+            
+            const appIdSources = {
+                'localStorage config.app_id': localStorage.getItem('config.app_id'),
+                'localStorage third_party.app_id': localStorage.getItem('third_party.app_id'),
+                'localStorage config.default_app_id': localStorage.getItem('config.default_app_id'),
+                'sessionStorage config.platform': sessionStorage.getItem('config.platform'),
+            };
+            
+            let html = '<div class="grid">';
+            html += `<span class="key">Current URL:</span><span class="value">${currentUrl}</span>`;
+            html += `<span class="key">Environment:</span><span class="value">${isNgrok ? 'Ngrok' : isLocalhost ? 'Localhost' : 'Unknown'}</span>`;
+            html += `<span class="key">Expected App ID:</span><span class="success">${EXPECTED_APP_ID}</span>`;
+            
+            for (const [key, value] of Object.entries(appIdSources)) {
+                const statusClass = value === EXPECTED_APP_ID ? 'success' : value ? 'warning' : 'error';
+                html += `<span class="key">${key}:</span><span class="${statusClass}">${value || '(not set)'}</span>`;
+            }
+            
+            html += '</div>';
+            config.innerHTML = html;
+        }
+        
+        // Function to display tokens
+        function displayTokens() {
+            const tokens = document.getElementById('tokens');
+            const accounts = localStorage.getItem('client.accounts');
+            const activeLoginId = localStorage.getItem('client.active_loginid');
+            const activeToken = localStorage.getItem('client.active_token');
+            
+            let html = '<div class="grid">';
+            html += `<span class="key">Active Login ID:</span><span class="value">${activeLoginId || '(none)'}</span>`;
+            html += `<span class="key">Active Token:</span><span class="value">${activeToken ? activeToken.substring(0, 10) + '...' : '(none)'}</span>`;
+            
+            if (accounts) {
+                try {
+                    const accountsObj = JSON.parse(accounts);
+                    html += `<span class="key">Accounts Count:</span><span class="value">${Object.keys(accountsObj).length}</span>`;
+                    
+                    for (const [loginId, data] of Object.entries(accountsObj)) {
+                        const isActive = loginId === activeLoginId;
+                        html += `<span class="key">${loginId}${isActive ? ' (ACTIVE)' : ''}:</span>`;
+                        html += `<span class="value">Token: ${data.token ? data.token.substring(0, 10) + '...' : 'missing'}</span>`;
+                    }
+                } catch (e) {
+                    html += `<span class="key">Parse Error:</span><span class="error">${e.message}</span>`;
+                }
+            } else {
+                html += `<span class="key">Accounts:</span><span class="error">No accounts stored</span>`;
+            }
+            
+            html += '</div>';
+            tokens.innerHTML = html;
+        }
+        
+        // Function to analyze all storage
+        function analyzeStorage() {
+            const storage = document.getElementById('storage');
+            const relevantKeys = [
+                'client.accounts',
+                'client.active_loginid',
+                'client.active_token',
+                'active_loginid',
+                'config.app_id',
+                'third_party.app_id',
+                'config.server_url',
+                'deriv_real_token',
+                'deriv_demo_token',
+                'oauth_response'
+            ];
+            
+            let html = '<h3>LocalStorage Analysis</h3><div class="grid">';
+            
+            for (const key of relevantKeys) {
+                const value = localStorage.getItem(key);
+                const exists = value !== null;
+                html += `<span class="key">${key}:</span>`;
+                html += `<span class="${exists ? 'success' : 'error'}">${exists ? '✓ Present' : '✗ Missing'}</span>`;
+            }
+            
+            html += '</div>';
+            
+            // Check for problematic keys
+            html += '<h3>Potential Issues</h3>';
+            const issues = [];
+            
+            const configAppId = localStorage.getItem('config.app_id');
+            if (configAppId && configAppId !== EXPECTED_APP_ID) {
+                issues.push(`config.app_id is "${configAppId}" but should be "${EXPECTED_APP_ID}"`);
+            }
+            
+            const activeToken = localStorage.getItem('client.active_token');
+            const activeLoginId = localStorage.getItem('client.active_loginid');
+            if (activeToken && !activeLoginId) {
+                issues.push('Has token but no login ID');
+            }
+            if (!activeToken && activeLoginId) {
+                issues.push('Has login ID but no token');
+            }
+            
+            if (issues.length > 0) {
+                html += '<ul>';
+                for (const issue of issues) {
+                    html += `<li class="warning">${issue}</li>`;
+                }
+                html += '</ul>';
+            } else {
+                html += '<p class="success">No obvious issues detected</p>';
+            }
+            
+            storage.innerHTML = html;
+        }
+        
+        // Clear all authentication data
+        function clearAllAuth() {
+            const keys = [
+                'client.accounts',
+                'client.active_loginid',
+                'client.active_token',
+                'active_loginid',
+                'config.app_id',
+                'third_party.app_id',
+                'config.default_app_id',
+                'config.server_url',
+                'deriv_real_token',
+                'deriv_demo_token',
+                'oauth_response',
+                'client.token'
+            ];
+            
+            for (const key of keys) {
+                localStorage.removeItem(key);
+            }
+            sessionStorage.clear();
+            
+            alert('All authentication data cleared! Page will reload.');
+            window.location.reload();
+        }
+        
+        // Set third-party mode
+        function setThirdPartyMode() {
+            localStorage.setItem('config.app_id', EXPECTED_APP_ID);
+            localStorage.setItem('third_party.app_id', EXPECTED_APP_ID);
+            alert(`Set app_id to ${EXPECTED_APP_ID}. Page will reload.`);
+            window.location.reload();
+        }
+        
+        // Test WebSocket connection
+        async function testWebSocket() {
+            const wsTest = document.getElementById('ws-test');
+            wsTest.innerHTML = '<p>Testing WebSocket connection...</p>';
+            
+            const appId = localStorage.getItem('config.app_id') || EXPECTED_APP_ID;
+            const token = localStorage.getItem('client.active_token');
+            const loginId = localStorage.getItem('client.active_loginid');
+            const isReal = loginId && !loginId.startsWith('VR');
+            const server = isReal ? 'green' : 'blue';
+            
+            const wsUrl = `wss://${server}.derivws.com/websockets/v3?app_id=${appId}&l=en&brand=deriv`;
+            
+            wsTest.innerHTML = `
+                <p><span class="key">WebSocket URL:</span> <span class="value">${wsUrl}</span></p>
+                <p><span class="key">App ID:</span> <span class="${appId === EXPECTED_APP_ID ? 'success' : 'error'}">${appId}</span></p>
+                <p><span class="key">Token:</span> <span class="value">${token ? 'Present' : 'Missing'}</span></p>
+                <p><span class="key">Login ID:</span> <span class="value">${loginId || 'None'}</span></p>
+                <p><span class="key">Server:</span> <span class="value">${server}</span></p>
+                <p>Connecting...</p>
+            `;
+            
+            try {
+                const ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    wsTest.innerHTML += '<p class="success">✓ WebSocket connected!</p>';
+                    
+                    if (token) {
+                        ws.send(JSON.stringify({
+                            authorize: token
+                        }));
+                        wsTest.innerHTML += '<p>Sending authorization...</p>';
+                    }
+                };
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.error) {
+                        wsTest.innerHTML += `<p class="error">Error: ${data.error.message} (Code: ${data.error.code})</p>`;
+                        
+                        if (data.error.code === 'InvalidAppID') {
+                            wsTest.innerHTML += `<p class="error">The token was issued for a different app_id!</p>`;
+                            wsTest.innerHTML += `<p class="warning">Solution: Clear all auth data and login again.</p>`;
+                        }
+                    } else if (data.authorize) {
+                        wsTest.innerHTML += `<p class="success">✓ Authorization successful!</p>`;
+                        wsTest.innerHTML += `<p>Login ID: ${data.authorize.loginid}</p>`;
+                        wsTest.innerHTML += `<p>Balance: ${data.authorize.balance} ${data.authorize.currency}</p>`;
+                    }
+                    
+                    wsTest.innerHTML += '<details><summary>Full Response</summary><pre>' + JSON.stringify(data, null, 2) + '</pre></details>';
+                };
+                
+                ws.onerror = (error) => {
+                    wsTest.innerHTML += `<p class="error">WebSocket error: ${error}</p>`;
+                };
+                
+                ws.onclose = () => {
+                    wsTest.innerHTML += '<p class="warning">WebSocket closed</p>';
+                };
+                
+            } catch (error) {
+                wsTest.innerHTML += `<p class="error">Failed to create WebSocket: ${error.message}</p>`;
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            displayConfig();
+            displayTokens();
+            analyzeStorage();
+        });
+    </script>
+</body>
+</html>

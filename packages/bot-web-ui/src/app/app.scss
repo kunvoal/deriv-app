@@ -11,8 +11,31 @@
     --zindex-modal: 6;
     --zindex-draggable-modal: 7;
     --zindex-snackbar: 8;
+
+    /* Bot accent theme variables */
+    --bot-accent-purple: #6e56cf;
+    --bot-accent-green: #2cb67d;
+    --bot-accent-orange: #f59e0b;
+
+    --bot-surface: rgba(110, 86, 207, 0.06);
+    --bot-surface-strong: rgba(110, 86, 207, 0.12);
+    --bot-outline: rgba(245, 158, 11, 0.9);
+
+    --bot-toolbar-bg: var(--bot-surface);
+    --bot-flyout-bg: var(--general-main-2);
+    --bot-tabs-active: var(--bot-accent-purple);
+    --bot-focus: var(--bot-outline);
+    --bot-button-primary: var(--bot-accent-purple);
+    --bot-button-primary-hover: color-mix(in srgb, var(--bot-accent-purple) 88%, #ffffff);
+
+    /* Local overrides of shared tokens within the bot scope */
+    --button-primary-default: var(--bot-button-primary);
+    --button-primary-hover: var(--bot-button-primary-hover);
+    --border-active: var(--bot-accent-green);
+    --purchase-main-1: var(--bot-accent-green);
+
     &-dashboard {
-        background: var(--general-section-1);
+        background: var(--bot-surface);
     }
 }
 

@@ -7,6 +7,7 @@ import {
     REVERSE_D_ALEMBERT,
     REVERSE_MARTINGALE,
     STRATEGY_1_3_2_6,
+    MATCHES_FREQUENCY_BULK,
 } from '../../../constants/quick-strategies';
 import { TConfigItem, TStrategies, TValidationItem } from './types';
 import { LocalizeHTMLForSellConditions } from './localize_html';
@@ -248,6 +249,7 @@ const TICK_COUNT = {
     has_currency_unit: false,
 };
 
+
 const LABEL_LAST_DIGIT_PREDICTION: TConfigItem = {
     type: 'label',
     name: 'label_last_digit_prediction',
@@ -266,6 +268,30 @@ const LAST_DIGIT_PREDICTION: TConfigItem = {
 };
 
 export const STRATEGIES: TStrategies = {
+    MATCHES_FREQUENCY_BULK: {
+        name: 'matches_frequency_bulk',
+        label: localize('Matches (Top Digit Frequency) – Bulk'),
+        rs_strategy_name: 'matches_frequency_bulk',
+        description: [],
+        fields: [
+            [
+                { type: 'label', label: localize('Asset'), description: localize('Underlying market for this strategy.') },
+                { type: 'symbol', name: 'symbol' },
+                { type: 'label', label: localize('Contract type'), description: localize('Each run uses this contract type.') },
+                { type: 'tradetype', name: 'tradetype', dependencies: ['symbol'] },
+                { type: 'contract_type', name: 'type', dependencies: ['symbol', 'tradetype'] },
+                { type: 'label', label: localize('Initial stake'), description: localize('Stake per bulk contract = Stake × number_of_digits.') },
+                { type: 'number', name: 'stake', has_currency_unit: true, validation: ['number', 'required', 'ceil', { type: 'min', value: 1, getMessage: min => localize('Must be a number higher than {{ min }}', { min: Number(min) - 1 }) }] },
+                { type: 'label', label: localize('Duration'), description: localize('How long each trade takes to expire.') },
+                { type: 'durationtype', name: 'durationtype', dependencies: ['symbol', 'tradetype'], attached: true },
+                { type: 'number', name: 'duration', attached: true, validation: ['number', 'required', 'min', 'max'] },
+                { type: 'label', label: localize('Profit threshold'), description: localize('Stop if total profit exceeds this amount.') },
+                { type: 'number', name: 'profit', has_currency_unit: true, validation: ['number', 'required', 'ceil', { type: 'min', value: 1, getMessage: min => localize('Must be a number higher than {{ min }}', { min: Number(min) - 1 }) }] },
+                { type: 'label', label: localize('Loss threshold'), description: localize('Stop if total loss exceeds this amount.') },
+                { type: 'number', name: 'loss', has_currency_unit: true, validation: ['number', 'required', 'ceil', { type: 'min', value: 1, getMessage: min => localize('Must be a number higher than {{ min }}', { min: Number(min) - 1 }) }] },
+            ],
+        ],
+    },
     MARTINGALE: {
         name: 'martingale_max-stake',
         label: localize('Martingale'),

@@ -41,12 +41,12 @@
 
         .dc-tabs {
             &__active-line {
-                background-color: var(--general-main-1);
+                background-color: var(--bot-tabs-active);
                 transition: none;
             }
 
             &__active {
-                background: var(--general-main-1);
+                background: var(--bot-surface-strong);
             }
 
             &__list {

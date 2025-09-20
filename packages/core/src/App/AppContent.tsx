@@ -170,7 +170,7 @@ const AppContent: React.FC<{ passthrough: unknown }> = observer(({ passthrough }
                 <AppModals />
             </ErrorBoundary>
             <AppToastMessages />
-            <Devtools />
+            {/* Devtools disabled for third-party apps */}
         </ThemeProvider>
     );
 });

@@ -16,7 +16,16 @@ const TradersHubHomeButton = observer(() => {
     const { pathname } = location;
 
     const handleTradershubRedirect = () => {
-        if (isHubRedirectionEnabled && has_wallet) {
+        // For third-party apps, never redirect to external Deriv servers
+        const isThirdParty = localStorage.getItem('third_party.app_id') === '101333' ||
+                           sessionStorage.getItem('third_party_auth') === 'true' ||
+                           window.location.hostname.includes('ngrok') ||
+                           window.location.hostname === 'localhost';
+        
+        if (isThirdParty) {
+            // Stay within the app
+            history.push(routes.traders_hub);
+        } else if (isHubRedirectionEnabled && has_wallet) {
             const PRODUCTION_REDIRECT_URL = `https://hub.${getDomainUrl()}/tradershub`;
             const STAGING_REDIRECT_URL = `https://staging-hub.${getDomainUrl()}/tradershub`;
             const redirectUrl = process.env.NODE_ENV === 'production' ? PRODUCTION_REDIRECT_URL : STAGING_REDIRECT_URL;

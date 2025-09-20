@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Storage - OAuth Debug</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0e0e0e;
+            color: white;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #ff444f;
+        }
+        button {
+            background: #ff444f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #e63946;
+        }
+        .success {
+            background: rgba(0, 167, 158, 0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            color: #00a79e;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .storage-info {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>OAuth Storage Debug & Clear</h1>
+        <p>Use this page to debug and clear OAuth-related storage issues.</p>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="clearAll()">🗑️ Clear All Storage</button>
+            <button onclick="clearOAuth()">🔐 Clear OAuth Only</button>
+            <button onclick="showStorage()">👁️ Show Current Storage</button>
+            <button onclick="goToLogin()">🚀 Go to Login Test</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="storage-info">
+            <h3>Current Storage Contents:</h3>
+            <pre id="storage-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        function clearAll() {
+            // Clear everything
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            
+            showStatus('✅ All storage cleared!');
+            showStorage();
+        }
+        
+        function clearOAuth() {
+            // OAuth related keys
+            const oauthKeys = [
+                'client.accounts',
+                'client.active_loginid',
+                'client.active_token',
+                'active_loginid',
+                'active_token',
+                'oauth_response',
+                'oauth_completed',
+                'deriv_accounts',
+                'deriv_oauth_tokens',
+                'deriv_real_token',
+                'deriv_demo_token',
+                'current_loginid',
+                'config.app_id',
+                'third_party.app_id',
+                'redirect_url'
+            ];
+            
+            oauthKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            // Clear token keys
+            Object.keys(sessionStorage).forEach(key => {
+                if (key.startsWith('token_')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+            
+            showStatus('✅ OAuth storage cleared!');
+            showStorage();
+        }
+        
+        function showStorage() {
+            const storage = {
+                localStorage: {},
+                sessionStorage: {}
+            };
+            
+            // Get localStorage items
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    const value = localStorage.getItem(key);
+                    // Try to parse JSON values
+                    try {
+                        storage.localStorage[key] = JSON.parse(value);
+                    } catch {
+                        storage.localStorage[key] = value;
+                    }
+                } catch (e) {
+                    storage.localStorage[key] = 'Error reading value';
+                }
+            }
+            
+            // Get sessionStorage items
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                try {
+                    const value = sessionStorage.getItem(key);
+                    // Try to parse JSON values
+                    try {
+                        storage.sessionStorage[key] = JSON.parse(value);
+                    } catch {
+                        storage.sessionStorage[key] = value;
+                    }
+                } catch (e) {
+                    storage.sessionStorage[key] = 'Error reading value';
+                }
+            }
+            
+            document.getElementById('storage-content').textContent = JSON.stringify(storage, null, 2);
+        }
+        
+        function showStatus(message) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="success">${message}</div>`;
+            setTimeout(() => {
+                statusEl.innerHTML = '';
+            }, 3000);
+        }
+        
+        function goToLogin() {
+            window.location.href = '/login-test.html';
+        }
+        
+        // Show storage on load
+        window.onload = function() {
+            showStorage();
+        };
+    </script>
+</body>
+</html>

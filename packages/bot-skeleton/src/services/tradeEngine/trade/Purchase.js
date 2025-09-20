@@ -10,10 +10,39 @@ let purchase_reference;
 
 export default Engine =>
     class Purchase extends Engine {
+        setBulkPurchase(enabled, digits) {
+            this.bulk = this.bulk || { enabled: false, digits: [], index: 0, base_amount: null, base_prediction: undefined };
+            if (!enabled) {
+                this.bulk = { enabled: false, digits: [], index: 0, base_amount: null, base_prediction: undefined };
+                return true;
+            }
+            const normalized = Array.isArray(digits)
+                ? digits
+                      .map(d => Number(d))
+                      .filter(n => Number.isFinite(n) && n >= 0 && n <= 9)
+                : [];
+            this.bulk.enabled = true;
+            this.bulk.digits = normalized;
+            this.bulk.index = 0;
+            this.bulk.base_amount = this.tradeOptions?.amount ?? this.bulk.base_amount;
+            this.bulk.base_prediction = this.tradeOptions?.prediction;
+            return true;
+        }
         purchase(contract_type) {
             // Prevent calling purchase twice
             if (this.store.getState().scope !== BEFORE_PURCHASE) {
                 return Promise.resolve();
+            }
+
+            // Handle Bulk pre-configuration
+            if (this.bulk?.enabled && Array.isArray(this.bulk.digits) && this.bulk.digits.length > 0) {
+                const idx = Math.max(0, Math.min(this.bulk.index || 0, this.bulk.digits.length - 1));
+                const current_digit = this.bulk.digits[idx];
+                // Per-contract stake = base stake x number_of_digits
+                const base_amount = this.bulk.base_amount ?? this.tradeOptions.amount;
+                const n = this.bulk.digits.length;
+                this.tradeOptions.amount = Number(base_amount) * n;
+                this.tradeOptions.prediction = current_digit;
             }
 
             const onSuccess = response => {
@@ -42,6 +71,18 @@ export default Engine =>
                     contract_type,
                     buy_price: buy.buy_price,
                 });
+
+                // After successful purchase, advance bulk index or reset
+                if (this.bulk?.enabled && Array.isArray(this.bulk.digits) && this.bulk.digits.length > 0) {
+                    this.bulk.index = (this.bulk.index || 0) + 1;
+                    if (this.bulk.index >= this.bulk.digits.length) {
+                        // Completed bulk cycle; reset state and restore trade options
+                        const base_amount = this.bulk.base_amount ?? this.tradeOptions.amount;
+                        this.tradeOptions.amount = base_amount;
+                        this.tradeOptions.prediction = this.bulk.base_prediction;
+                        this.bulk = { enabled: false, digits: [], index: 0, base_amount: null, base_prediction: undefined };
+                    }
+                }
             };
 
             if (this.is_proposal_subscription_required) {
